@@ -47,9 +47,9 @@
 % Personal commands and abbreviations.
 %Define and personal commands here
 % Put this in the preamble
-\newcommand\abbreviationsname{\Huge List of Abbreviations and Symbols}
+\newcommand\abbreviationsname{\normalsize List of Abbreviations and Symbols}
 \newcommand\abbreviations{%
-  	{\LARGE \nmchapter{\abbreviationsname}}
+  	{\Huge \nmchapter{\abbreviationsname}}
 }
 
 %Graphics Path to find your pictures
@@ -153,15 +153,15 @@
 \bibliographystyle{./Bibliography/IEEEtranS} %Formats bibliography
 \cleardoublepage
 \normalbaselines %Fixes spacing of bibliography
-\addcontentsline{toc}{chapter}{Bibliography} %adds Bibliography to your table of contents
+% \addcontentsline{toc}{chapter}{Bibliography} %adds Bibliography to your table of contents
 \bibliography{./Bibliography/References} %your bibliography file - change the path if needed
 
 %-----------------------------------------------------------------------------%
 % APPENDICES -- OPTIONAL. These are just chapters enumerated by Appendix 1,
 %                Appendix 2, Appendix 3...
 %-----------------------------------------------------------------------------%
-\appendix
-\include{{./Appendix/appendix1}} % Start with '\chapter{Title}'
+% \appendix
+% \include{{./Appendix/appendix1}} % Start with '\chapter{Title}'
 %You can always add more appendices here if you want
 % You're done :)
 \end{document}
