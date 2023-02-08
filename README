@@ -1,0 +1,59 @@
+inithesis.cls   
+Version 0.2, February 8 2023
+This template acommodates the latest version of LaTex. It can be imported to Overleaf directly.
+
+Version 0.1, April 1 2012
+
+This document class is intended to pass the carnegie mellon university format check for
+ECE masters theses.  It is built on a modern version of the LaTeX 2e
+report.cls.  
+
+The thesis.tex file is a working model for a thesis.  
+See the comments there for more instruction, as well as in abstract.tex and biography.tex.
+
+Class documentation appears in the top comment of inithesis.cls.  
+
+Before you begin, try to build the included example thesis.  Install LaTeX (in Ubuntu
+use "sudo apt-get install texlive-full") and Run
+  $ pdflatex thesis.tex
+  $ pdflatex thesis.tex
+  $ bibtex thesis
+  $ pdflatex thesis.tex
+  $ pdflatex thesis.tex
+If this doesn't work, likely culprits are (a) an old, pre-pdftex TeX
+distribution,  (b) you're missing some packages, like 'graphicx',
+(c) you're missing some optional packages in dissertation.tex:
+'hyperref' 'amsmath', 'amssymb', 'amsfonts', or 'amsthm'.  A quick-fix is to
+download the required package from http://www.ctan.org/ and jam everything
+in the directory of thesis.tex.
+
+RELEASE VERSION
+Please send bugs, comments, and suggestions to ini-enrollment@andrew.cmu.edu
+
+KNOWN BUGS
+* Failure to include any sort of abstract (even a placeholder) will result
+  in strange behavior.
+
+SPACING
+This class uses \raggedbottom, so that excess space on a page is
+grouped at the bottom.  This is the easiest thing to make everything look
+nice.  If you want to work harder, try putting \flushbottom just after
+\begin{document}.  Check thesis.log for "underfull vbox" errors.
+Those pages will have lots of extra vertical space inserted so that the
+bottom line on each page is at the same height.  To fix the bad spacing, you
+need to break-up large display environments and figures so that TeX has more
+flexibility in formatting pages.  If that sounds scary to you, just live
+with \raggedbottom.
+
+BASIC STEPS
+1) Update the title, author, program, previousdegrees, and fulldate variables 
+   listed under PREAMBLE in thesis.tex
+2) Updated the "\include" files under MAIN BODY OF PAPER to match the structure 
+   of your thesis
+3) Replace References.bib with your .bib file of references
+4) Replace fill in the blanks in cur_ThesisSig.doc with your information 
+   and save in PDF form as signature.pdf 
+5) Write your text in the .tex files found in the chapter folders (your paper
+   can have a different structure.  For new chapters just add a new .tex file
+   include it in thesis.tex, and begin with the \chapter{your chapter title} 
+   heading)

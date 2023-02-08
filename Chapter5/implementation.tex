@@ -1,0 +1,182 @@
+%
+% $Id: methodology.tex 164 2010-12-08 21:26:36Z nicolasc $
+%
+
+\chapter{Individual Analysis}
+\label{sec:implementation}
+%
+%-	All the devices could boot into recovery mode, so we used the recovery technique \cite{Tim}
+%-	Android boot image structure
+%	¥	Header Ð defines the size of each segment of the boot image, where to flash each segment in memory, and gives command line options to the bootloader
+%	¥	Kernel Ð the kernel that is run by the bootloader when the device boots into recovery mode
+%	¥	Ramdisk Ð basically a small filesystem that contains the files necessary to start the system.
+%- 	Built a custom image for each device, reduced, and compared
+%	¥	Used source.android.com to build the ramdisk
+%	¥	Used source from manufacturers, stock images, or mod images to get kernel and header
+
+To generalize the recovery method for Android, we focus on two key components:  the recovery image and the flashing mechanism.  In this section we will further discuss the components of the recovery method and give the steps taken to port the recovery method to each device.
+
+\section{Recovery Image Structure}
+\label{sec:boot_image}	
+
+
+The first step in porting the recovery method to a new device is better understanding the recovery image.  The recovery image consists of three main components: the header, kernel, and the ramdisk \footnote{A secondary ramdisk is optional, however it is unnecessary to our application and for simplicity has been omitted from our discussion}.  The Android bootimg structure can be seen in Figure \ref{fig:bootimg_struct}. 
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.8\textwidth]{Pictures/bootimg_struct}
+%\includegraphics[width=3in]{figs/motomotog1}
+\caption{\label{fig:bootimg_struct}
+{\bf Bootimg Structure}: structure of a common Android bootimg}
+\end{figure*}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.7\textwidth]{Pictures/header_struct}
+%\includegraphics[width=3in]{figs/motomotog1}
+\caption{\label{fig:header_struct}
+{\bf Header Structure}: structure of a common Android bootimg header}
+\end{figure*}
+	 
+\subsection{Header}
+\label{sec:header}
+
+The first segment of an Android recovery image is the header.  The header is placed at the start of the image and provides essential metadata to the bootloader for loading the other components when booting into recovery mode.  The structure of the header is given in bootimg.h\footnote{bootimg.h can be found at $<$path to source tree$>$/system/core/mkbootimg/bootimg.h} in the Android source \cite{_welcome_????} and can be seen in Figure \ref{fig:header_struct}.
+
+The image header begins with the magic signature ("ANDROID!"), which is used to identify the start of the image.  After the magic signature, the size and memory location in which to load the kernel, ramdisk, and secondary image is given.  The header concludes with the physical address of any kernel tags, the image's page size, command line options, and a checksum which is used to detect whether the recovery image has been corrupted.
+
+\subsection{Kernel}
+\label{sec:kernel}
+
+The second segment of the recovery image is a gzipped kernel.  As described in Section \ref{sec:ekernel}, the kernel stored in the recovery image is a customized variant of the Linux 2.6 kernel.  The kernel acts as a mediary between the Android framework and the hardware, memory management, process management, the network stack, and the driver model \cite{android_developers}, so the kernel for each device is tuned to work with a specific set of hardware.
+
+\subsection{Ramdisk}
+\label{sec:ramdisk}
+
+\begin{table*}[!t]
+\begin{center}
+\small
+\begin{tabular}{|c|c|}
+\hline
+ {\bf Name}  & {\bf Description} \\
+\hline
+\hline
+default.prop & Default Build Properties \\
+\hline
+init.rc & System-wide initialization values  \\
+\hline
+init & Initialization executable  \\
+\hline
+system/ & System files and tools   \\
+\hline
+sbin/ & Additional tools   \\
+\hline
+sbin/adb & Android Debug Bridge executable   \\
+\hline
+sbin/recovery & Recovery executalbe  \\
+\hline
+res/ & Images for recovery mode \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Important Ramdisk Files}
+\label{table:ramdisk_files}
+\end{table*}
+
+The last segment of the recovery image is the ramdisk.  The ramdisk in the bootimg is a compressed (gzip or lmza) cpio file containing an initial directory structure for the kernel \cite{android_developers}.  Essentially, the ramdisk contains the core files needed for system initialization.   Table \ref{table:ramdisk_files} gives the files and folders most commonly found and important in the recovery image and their usage.  The most important files are the \emph{init} binary, \emph{init.rc}, which controls most system-wide properties, and the \emph{recovery} binary, which is executed when the phone is booted into recovery mode \cite{rootzwiki_unpack}.
+
+Note that though the image structure given above is defined by the Android framework, not every device uses the same image structure.  Specifically, Samsung devices use a different method where the ramdisk is built into the kernel and the kernel is then flashed on to the device.  However, the components for each method remain the same, the only difference is in the way they are packaged.
+
+\section{Custom Image}
+\label{sec:custom_image}
+
+To build a custom recovery image for each device, we split the process between the three components of the image: the header, kernel, and ramdisk.
+
+\subsection{Header}
+\label{sec:custom_header}
+
+To generate a header for our new recovery image, we need to select values for the size and loading location of the kernel, ramdisk, and secondary ramdisk, the address of the kernel tags, image page size, command line options, and checksum.  We omit the magic signature in our discussion because it is constant across all images.
+
+The sizes for the kernel, ramdisk, and secondary ramdisk can be calculated once we create our custom components as described below\footnote{the size of the secondary ramdisk will always be zero because it is never used in our application}.  The loading location for each component is generated as a standard offset from a base address\footnote{kernel address = base + 0x0000800, ramdisk address = base + 0x01000000, secondary ramdsik address = 0x00F00000, kernel tags address = base + 0x00000100} (given in mkbootimg.c\footnote{mkbootimg.c can be found at $<$path to source tree$>$/system/core/mkbootimg/mkbootimg.c}).  Therefore, we only need to select a single base offset.  Additionally, the checksum is calculated over all our custom components.
+
+To select the correct values for the base address, page size, and command-line options, we can either extract them from another working image's header or from a kernel built for our device.
+
+\subsection{Kernel}
+\label{sec:custom_kernel}
+
+For our custom recovery image to work on a new device, we need a kernel that understands how to communicate with the specific hardware found on that device.  Obtaining a working kernel can be done in one of two ways, building the kernel from source or extracting it from a working image.
+
+\subsubsection{Kernel Source}
+\label{sec:kernel_source}
+
+Some manufacturers (HTC, Samsung, etc.)\cite{htc_source, samsung_source} have made the kernel source for all their devices publically available.  For these devices, we can simply download their source and an ARM cross-compiler \cite{cross_compiler} and build to get a working kernel.  Note, this method is preferable to extracting a kernel binary because the source can be read and analyzed to ensure that no malicious or unwanted actions are executed when running a kernel, whereas identifying unwanted effects  becomes much more difficult when looking at a kernel binary \cite{enck_app_security}.  
+
+For future analysis and comparison purposes, when building each device kernel we minimize the configuration so that only necessary components are included.  Because our forensic application only requires a small set of features, we removed any unnecessary devices, such as audio, open GL, and networking drivers, and only included code necessary to run the recovery executable, access memory, and establish an \emph{adb} connection over USB.
+
+\subsubsection{Extracted Kernel}
+\label{sec:extracted_kernel}
+
+For devices where no source is available, we extracted our kernels from recovery images that are known to work for our target device.  Working images can be obtained through one of three methods.
+
+The first two methods obtain a "stock" image, the image that is provided by the manufacturers for that device.  The first method is to obtain another device that is the same model and is unrelated to the investigation.  With the secondary device, a recovery image can be extracted using a technique similar to those given in Section \ref{sec:rooting}.  The practitioner would root the device, then use a tool like Nandroid Backup \cite{nandroid} to extract the recovery image.
+
+The second method for obtaining a "stock" image is to obtain an Over-the-Air (OTA) update for the device.  To push software updates to devices, Android provides a mechanism for supplying updates wirelessly \cite{android_ota}.  By intercepting OTAs as they are transferred to the device, or querying the Android OTA servers using the proper protocol, it is possible to obtain a stock image, though querying OTA servers may be difficult as it would require impersonating the device \cite{tim_usenix_2012}.  
+
+The final method for obtaining a working recovery image is through the modding community.  "Modded" images, as discussed in Section \ref{sec:mod_comm}, provide a modified Android experience for users that want to push the performance of their devices or add features not supported by Android.  "Modded" images can be obtained from many sources, such as forums \cite{droid_mod_forum, xda_developer_mod_forum, android_modz} and developer sites \cite{cyanogen_wiki, amon_ra_wiki}.  Because of the strong Android development community, images for all devices can typically be found and if a "modded" image is not available, there is commonly a stock image posted by someone attempting to create a "mod" for their device.  Therefore, the modding community can also be useful in finding stock images for devices that can not be procured.  However, posted stock images should not be relied upon unless absolutely necessary as it is hard to know whether the extraction of the image was executed properly and no modifications have been made.
+
+A stock image is preferable to an image from the modding community because Android and the manufacturer are assumed to test the images more thoroughly and are motivated by sales to ensure their code works with no negative effects, whereas "modders" may have other motivations which could lead to unwanted side effects.
+
+\subsection{Ramdisk}
+\label{sec:custom_ramdisk}
+
+To generate a custom ramdisk for our recovery image we utilize the openness of the Android platform.  Using the Android source \cite{_welcome_????} we simply modify a few configuration files to match the configuration of our device, and add our forensics tools into the build tree for inclusion into the image.
+
+\subsubsection{Device Configuration}
+\label{sec:device_config}
+
+To build a ramdisk for a new device we have to add a folder under the \emph{device/} directory for the manufacturer\footnote{If a device for by the same manufacturer has already been added to the tree, then just use the folder for that manufacturer.} and within the manufacturer directory add a new folder for the device.  The device specific directory contains all the information necessary to build the Android source for a given device.  Configuration information includes all the specific header information given in Section \ref{sec:custom_header}, the custom kernel from Section \ref{sec:custom_kernel}, and other make information necessary for the build process.
+
+To build the ramdisk once configuration information has been given, use the following set of commands:
+\begin{quotation}
+. build/envsetup.sh
+
+lunch full\_$<$device name$>$-eng
+
+make -j1 recoveryimage
+\end{quotation}
+
+The resulting ramdisk can be found at \emph{out/target/product/$<$device name$>$/recove-}\emph{ry/root/} in the Android build directory.  Note, to prepare for device build comparison and analysis we reduce the device configuration to its minimal set of necessary options, to avoid including any spurious information in our analysis.
+
+\subsubsection{Forensic Tools}
+\label{sec:forensic_tools}
+
+To add our forensic tools to the ramdisk, we have to make two modifications: add custom busybox source to the build tree and update init.rc.
+
+Busybox is an executable which contains size optimized versions of common Linux tools designed for resource limited systems \cite{busybox_about}.  By adding busybox to the build we provide the \emph{adb} remote shell with commonly used tools such as \emph{ls}, \emph{cat}, \emph{file}, etc with little effort.  Also, busybox is open source and extendable \cite{add_to_busybox}, allowing us to add our forensic tools, such as \emph{nanddump} and \emph{transfer}, into the ramdisk with little effort
+
+To add busybox to the Android build we first copied the modified busybox source into the \emph{external/} directory of the Android source tree.  To get the recovery executable to properly reference busybox we also have to modify recovery.c\footnote{recovery.c can be found at \emph{bootable/recovery/recovery.c} in the Android source tree} to redirect any input to the recovery tool that is not recognized by recovery to busybox and update the make files to include links to busybox and the busybox libraries.
+
+The init.rc file is used to control system-wide properties, such as partition mounting and starting service \cite{rootzwiki_unpack}.  For our forensic application, we modify the init.rc file to mount the partitions we want to image as globally readable, give our forensic tools root level permissions, and ensure that the adb service is running at startup. Our modifications were made to the init.rc file found in \emph{bootable/recovery/etc} in the Android source tree.
+
+\section{Flashing Tools}
+\label{sec:flash_tools}
+
+Once we have created an image for each device, we then need to find a way to write the custom image to the recovery partition.  For maintenance purposes, manufacturers tend to build proprietary tools for flashing images, though they may not be publicly available and may require a carrier or manufacture key to use.
+
+\subsection{Acquiring the Tool}
+\label{sec:acquiring_tool}
+
+To first obtain the flashing tool there are several possibilities.  If the tool is provided publicly (such as \emph{fastboot} \cite{fastboot}), then it can simply be downloaded from the developer's website and used to write the recovery image.  However, these tools are typically not open source and commonly are only built for the manufacture's operating system of choice (i.e. Windows).  Thus, if the practitioner is using a different operating system, they either need to run the tool in a virtual machine (VM), which can have problems negotiating a connection over USB, or use a different tool.
+
+Many of the proprietary tools have been reverse engineered \cite{sbf_flash, heimdall} by the modding community and distributed publicly for multiple host operating systems.  Modded tools are easier to obtain and avoid the challenges presented by proprietary tools, however, they should still be used with caution, similarly to the images discussed in Section \ref{sec:extracted_kernel}, as they are provided by a less reputable source.  In the case of reverse engineered tools, it is best to find open source implementations, so the source can be analyzed for any negative side effects before use.
+
+\subsection{Locked Bootloader}
+\label{sec:locked_bootloader}
+
+After we have the flashing tool it is important to understand what level of privilege we have to write to the device.  In some cases our access may be completely unrestricted.  If we are given full write capabilities, then we can simply connect our device via USB and begin writing our recovery image.  However, this is not always the case.  Some phones may have an unlock-able or signed bootloader which restricts write access to the device.
+
+In the case of an unlock-able bootloader, the manufacturer allows the user to overwrite the device images, but only after they receive a key from the manufacturer.  By requiring a manufacturer key to unlock a device, the manufacturer can identify which devices have been unlocked and thus have voided their warranty. 
+
+The other case of bootloader restriction is the signed bootloader.  With a signed bootloader, only images which are signed by the manufacturer's cryptographic secret key can be written to the device.  By using a signed bootloader, the manufacturer prohibits any updates to the phone's image that they did not create.
+
+For our analysis we bypass bootloader restrictions for the sake of building recovery images for a greater range of devices.  We bypass the unlock-able bootloader simply by registering the devices with the manufacturer to obtain a key and continuing with the unlock process and we circumvent the signed bootloader by exploiting a vulnerability in the operating system.  Specific cases of our techniques will be given in Section \ref{sec:results}.  We assume that in a real forensic investigation, the authority prosecuting the case could obtain the manufacturer key through the legal process to reach the same resultant unlocked state we have achieved without any modifications to the system.

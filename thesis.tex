@@ -1,0 +1,167 @@
+\documentclass[MS]{inithesis}
+%\documentclass[economy,twoside,bind]{inithesis}
+% Use the second for a single-spaced copy suitable for duplex printing
+% and binding.
+
+% Other useful options (there are more options documented in Chapter 2):
+%  * draft -- don't actually include images, print a black bar on overful
+%             hboxes
+%  * MS    -- Format for a Master's Thesis.  No UMI abstract page, some 
+%             textual changes to title page.  
+
+
+% Useful packages for thesis writing:
+\usepackage{amsmath, amssymb, amsfonts, amsthm}
+\usepackage{graphicx}
+%\usepackage{natbib}
+\usepackage{color}
+\usepackage{bm}
+%\usepackage{subfigure}
+\usepackage{graphicx}
+\usepackage{mathabx}
+\usepackage{multirow}
+\usepackage{setspace}
+\usepackage{pdfpages}
+\usepackage{tocloft}
+\addtolength\cftfignumwidth{2.7em}%
+\addtolength\cfttabnumwidth{2.7em}%
+%\renewcommand{\cftpartnumwidth}{4em}
+%\renewcommand{\cftchapaftersnumb}{\hspace{0em}}
+%\renewcommand{\cftsecnumwidth}{1.5em}
+%\renewcommand{\cftsecaftersnumb}{\hspace{0em}}
+%\renewcommand{\cftsubsubsecindent}{8em}
+%\renewcommand{\cftsubsecaftersnumb}{\hspace{0em}}
+
+% \usepackage{cite}  % If you include this, hyperlink cites will
+                     % break.  It's nice to use this package if your bibstyle
+							% sorts entries by order-of-use, rather than
+							% alphabetically (as plain does).
+							
+%Theorem, Lemma, etc. environments
+\newtheorem{theorem}{Theorem}%[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{result}[theorem]{Result}
+
+% Personal commands and abbreviations.
+%Define and personal commands here
+% Put this in the preamble
+\newcommand\abbreviationsname{\Huge List of Abbreviations and Symbols}
+\newcommand\abbreviations{%
+  	{\LARGE \nmchapter{\abbreviationsname}}
+}
+
+%Graphics Path to find your pictures
+\graphicspath{{./Pictures/}}
+
+
+%-----------------------------------------------------------------------------%
+% PREAMBLE 
+%-----------------------------------------------------------------------------%
+\author{[First MI. Last]}% First Name, Middle Initial, Last Name
+\title{[Your Title Here]}
+%\supervisor{Dr. Nicolas Christin}
+%\advisor{Dr. Nicolas Christin}
+\department{Information Networking Institute}
+\program{[Program Name]}% MSISTM, MSIN or MIST-X
+%\departmenthead{Dr. Dena Haritos Tsamitis}
+%\dean{Dr. Pradeep Khosla}
+\previousdegreelist{B.S., Stuff Learned, Some other School \\ M.S., More Stuff Learned, Another School}% Separate Multiple Entries with ' \\ '
+\fulldate{April, 2012} % Month, Year
+% Year the degree was/will be conferred
+\degreeyear{2019}
+
+% Copyright text.  If undefined, default is 'All rights reserved'
+% (Example sets the text to a hyperlinked Creative Commons Licence)
+\copyrighttext{All Rights Reserved}
+
+
+
+%-----------------------------------------------------------------------------%
+% HYPERREF: plain black hypertext references for ref's and cite's.
+%-----------------------------------------------------------------------------%
+\usepackage[pdftex, pdfusetitle, plainpages=false, 
+				bookmarks, bookmarksnumbered,
+				colorlinks, linkcolor=black, citecolor=black,
+	         filecolor=black, urlcolor=black]
+				{hyperref}
+    
+\begin{document}
+
+% Fill in the blanks in cur_ThesisSig.doc with your information and save in 
+% PDF format as signature.pdf 
+\includepdf[pages={1}]{signature.pdf}
+
+%-----------------------------------------------------------------------------%
+% TITLE PAGE -- provides UMI abstract title page & copyright if appropriate
+%-----------------------------------------------------------------------------%
+\maketitle
+
+%-----------------------------------------------------------------------------%
+% ACKNOWLEDGEMENTS -- included file should start with '\acknowledgements'
+%-----------------------------------------------------------------------------%
+\include{{./Acknowledgements/acknowledgements}}
+
+%-----------------------------------------------------------------------------%
+% ABSTRACT -- included file should start with '\abstract'.
+%-----------------------------------------------------------------------------%
+\include{{./Abstract/abstract}}
+
+%-----------------------------------------------------------------------------%
+% FRONTMATTER -- ToC is required, LoT and LoF are required if you have any
+% tables or figures, respectively. List of Abbreviations and Symbols is 
+% optional.
+%-----------------------------------------------------------------------------%
+\tableofcontents % Automatically generated
+\newpage
+\listoftables	% If you have any tables, automatically generated
+\addcontentsline{toc}{chapter}{List of Tables}%
+\newpage
+\listoffigures	% If you have any figures, automatically generated
+\addcontentsline{toc}{chapter}{List of Figures}%
+\newpage
+\include{{./Symbols/listofsymbols}} % List of Abbreviations. Start file with '\abbreviations'
+
+%==============================================================================
+%-----------------------------------------------------------------------------%
+%
+% MAIN BODY OF PAPER
+%
+%
+%-----------------------------------------------------------------------------%
+\include{{./Chapter1/introduction}}
+\include{{./Chapter2/background}} % A regular chapter, starts with '\chapter{Title}'
+\include{{./Chapter3/related}}
+\include{{./Chapter4/overview}}
+%\include{{./Chapter5/implementation}} //Some other possible sections
+%\include{{./Chapter6/testing}}
+%\include{{./Chapter7/results}}
+%\include{{./Chapter8/conclusion}}
+%\include{{./Chapter9/discussion}}
+%\include{{./Chapter10/future}}
+%==============================================================================
+
+%-----------------------------------------------------------------------------%
+% BIBLIOGRAPHY -- uncomment \nocite{*} to include items in 'mybib.bib' file
+% that aren't cited in the text.  Change the style to match your
+% discipline's standards.  Of course, if your bibliography file isn't called
+% 'mybib.bib' you might want to change that here too :)
+%-----------------------------------------------------------------------------%
+%\nocite{*} - if you use this it will put EVERYTHING in your .bib file into the references even if you don't cite it in the text
+% \bibliographystyle{./Bibliography/jasa} %Formats bibliography
+\bibliographystyle{./Bibliography/IEEEtranS} %Formats bibliography
+\cleardoublepage
+\normalbaselines %Fixes spacing of bibliography
+\addcontentsline{toc}{chapter}{Bibliography} %adds Bibliography to your table of contents
+\bibliography{./Bibliography/References} %your bibliography file - change the path if needed
+
+%-----------------------------------------------------------------------------%
+% APPENDICES -- OPTIONAL. These are just chapters enumerated by Appendix 1,
+%                Appendix 2, Appendix 3...
+%-----------------------------------------------------------------------------%
+\appendix
+\include{{./Appendix/appendix1}} % Start with '\chapter{Title}'
+%You can always add more appendices here if you want
+% You're done :)
+\end{document}
